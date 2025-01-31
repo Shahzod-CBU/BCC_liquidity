@@ -41,7 +41,7 @@ This framework includes a diverse range of models from econometrics and machine 
 ### **2️⃣ Ensemble Learning for Improved Forecasting Accuracy**
 - **Weighted Blending:**  
   - Combines **SARIMA, Prophet, and Random Forest** forecasts.  
-  - Weights determined using **inverse expected variance method** & **validation MAE**.
+  - Weights determined using **train MAE**.
 
 - **Stacking:**  
   - Uses **Linear Regression** as a **meta-model** to optimally combine forecasts.
