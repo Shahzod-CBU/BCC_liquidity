@@ -16,7 +16,6 @@ This framework includes a diverse range of models from econometrics and machine 
 
 - **Exponential Smoothing (ETS - Error-Trend-Seasonality)**  
   - Implements **Holt-Winters' method** with additive trend & seasonality.  
-  - Uses **square-root transformation** to stabilize variance.  
   - Forecast intervals are derived using residual variance analysis and **GARCH modeling**.
 
 - **Prophet (Facebook/Meta)**  
