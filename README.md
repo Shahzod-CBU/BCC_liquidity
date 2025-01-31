@@ -77,3 +77,26 @@ To handle large-scale forecasting efficiently, the framework leverages **multipr
 │-- 📂 data/               # Directory for dataset storage
 │-- 📂 results/            # Directory for storing model results & visualizations
 │-- 📜 README.md           # Project documentation
+```
+
+## **📌 Installation & Usage**
+1. **Clone the repository**
+   ```sh
+   git clone https://github.com/Shahzod-CBU/BCC_liquidity.git
+   cd BCC_liquidity
+   ```
+
+2. **Install required dependencies**
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+3. **Run the main script**
+   ```sh
+   python app_multi1.py
+   ```
+
+---
+
+## **📧 Contact & Contributions**
+Contributions are welcome! Feel free to open an issue or submit a pull request.
