@@ -12,13 +12,12 @@ This framework includes a diverse range of models from econometrics and machine 
 #### **📊 Econometric Models**
 - **SARIMA (Seasonal Autoregressive Integrated Moving Average)**  
   - Automatically selects optimal hyperparameters using `pmdarima.auto_arima`.  
-  - Uses **log-transformed** data for stability.  
-  - Forecast intervals are derived using residual variance analysis and **GARCH modeling**.
+  - Uses **power-transformed** data for stability.  
 
 - **Exponential Smoothing (ETS - Error-Trend-Seasonality)**  
   - Implements **Holt-Winters' method** with additive trend & seasonality.  
   - Uses **square-root transformation** to stabilize variance.  
-  - Forecast confidence intervals computed via residual-based analysis.
+  - Forecast intervals are derived using residual variance analysis and **GARCH modeling**.
 
 - **Prophet (Facebook/Meta)**  
   - Handles missing values and outliers effectively.  
@@ -36,7 +35,6 @@ This framework includes a diverse range of models from econometrics and machine 
 
 - **GRU-Based Neural Network**  
   - Implements a **Seq2Seq GRU** architecture.  
-  - Uses **wavelet transformations** for feature extraction.  
   - Multiple look-back windows tested for sequence dependency optimization.
 
 ---
@@ -48,6 +46,9 @@ This framework includes a diverse range of models from econometrics and machine 
 
 - **Stacking:**  
   - Uses **Linear Regression** as a **meta-model** to optimally combine forecasts.
+ 
+- **Inverse of expected variance:**
+  - Weights of ensemble members are determined based on the inverse of their predicted model variances.
 
 ---
 
