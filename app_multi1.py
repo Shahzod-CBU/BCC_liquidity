@@ -81,12 +81,12 @@ def transformation_train(data_handler):
         manager.performance_metrics['RandomForestRegressor'] = performance
 
         # Train GRU
-        look_back = 5
-        manager.forecast_cycle_GRU(look_back, pretrain=True, plot=False)
-        GRU_forecast = manager.point_forecasts['GRU']
-        performance = manager.evaluate_metrics(y_raw_test[look_back:], GRU_forecast)
-        manager.performance_metrics['GRU'] = performance
-        print(data_handler.transformation, data_handler.scaler_type, performance, flush=True)
+        # look_back = 5
+        # manager.forecast_cycle_GRU(look_back, pretrain=True, plot=False)
+        # GRU_forecast = manager.point_forecasts['GRU']
+        # performance = manager.evaluate_metrics(y_raw_test[look_back:], GRU_forecast)
+        # manager.performance_metrics['GRU'] = performance
+        # print(data_handler.transformation, data_handler.scaler_type, performance, flush=True)
     return manager
 
     
