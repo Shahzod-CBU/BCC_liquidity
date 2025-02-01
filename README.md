@@ -14,7 +14,7 @@ This framework includes a diverse range of models from econometrics and machine 
   - Automatically selects optimal hyperparameters using `pmdarima.auto_arima`.  
   - Uses **power-transformed** data for stability.  
 
-- **Exponential Smoothing (ETS - Error-Trend-Seasonality)**  
+- **Exponential Smoothing**  
   - Implements **Holt-Winters' method** with additive trend & seasonality.  
   - Forecast intervals are derived using residual variance analysis and **GARCH modeling**.
 
