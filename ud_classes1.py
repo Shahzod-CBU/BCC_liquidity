@@ -5,110 +5,57 @@ Created on Sat Dec 14 17:23:38 2024
 
 @author: shahzod
 
-Contains user defined classes
+Contains user defined classes and relevant functions
 """
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' 
 
+# Standard Library Imports
 import json
-import pandas as pd
+import numbers
+import warnings
+from functools import partial
+
+# Numerical & Statistical Libraries
 import numpy as np
-from scipy.stats import boxcox, yeojohnson
+import pandas as pd
+import scipy.stats as stats
+from scipy.stats import boxcox, yeojohnson, t
 from scipy.special import inv_boxcox
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
+
+# Machine Learning & Preprocessing
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
+from sklearn.model_selection import train_test_split, GridSearchCV, TimeSeriesSplit
+from sklearn.metrics import (mean_absolute_error, mean_absolute_percentage_error, 
+                             mean_squared_error, r2_score)
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.utils import resample
+
+# Time Series & Forecasting Models
+import statsmodels.api as sm
 from statsmodels.tsa.filters.hp_filter import hpfilter
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.stats.diagnostic import het_arch
-import matplotlib.pyplot as plt
-import statsmodels.api as sm
-import warnings
-from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import train_test_split, GridSearchCV
-from prophet import Prophet
-
-from sklearn.metrics import mean_absolute_percentage_error, mean_squared_error, r2_score
-from pmdarima import auto_arima
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.statespace.sarimax import SARIMAX
-import optuna
-from sklearn.model_selection import TimeSeriesSplit
-import numbers
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from scipy.stats import t
-from sklearn.utils import resample
-import scipy.stats as stats
-from functools import partial
+from pmdarima import auto_arima
+from prophet import Prophet
+
+# Deep Learning Frameworks
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
+# Plotting & Visualization
+import matplotlib.pyplot as plt
+
+# Hyperparameter Optimization
+import optuna
+
+
 plt.rcParams["font.family"] = "Times New Roman"
-
-
-class IdentityScaler(BaseEstimator, TransformerMixin):
-    """A scaler that performs no transformation (identity transformation).
-    - Pipeline compatable: It integrates smoothly into scikit-learn pipelines.
-    - Useful for conditional scaling: Use it when you want to decide dynamically 
-    whether to scale the data or leave it untouched.
-    - Provides consistency: Makes the code cleaner and avoids handling special 
-    cases where no scaling is required.
-    """
-    def fit(self, X, y=None):
-        # Nothing to fit; return self
-        return self
-    
-    def transform(self, X):
-        # Return the data unchanged
-        return np.asarray(X)
-    
-    def inverse_transform(self, X):
-        # Return the data unchanged
-        return np.asarray(X)
-    
-    def fit_transform(self, X, y=None):
-        # Fit and transform in one step
-        return self.fit(X, y).transform(X)
-    
-# For multiprocessing to be able to pickle, define inverse power  
-# transforamtion functions outside of the DataHandler class
-def linear(x): return x
-def square(x): return x**2
-def product(x, transformation): return x * transformation
-def inverse_boxcox(lam, x): 
-    return inv_boxcox(x, lam)
-    # return (np.exp(np.log(lam * x + 1) / lam) - 1) if lam != 0 else np.exp(x) - 1
-
-def inverse_yeo_johnson(lam, transformed_data):
-    """
-    Perform the inverse Yeo-Johnson transformation on the given data.
-
-    Parameters:
-    - lam: float, the lambda parameter used in the original transformation
-    - transformed_data: array-like, transformed data to invert
-
-    Returns:
-    - original_data: array-like, data in the original scale
-    """
-    transformed_data = np.array(transformed_data)
-    original_data = np.zeros_like(transformed_data)
-    
-    # For y >= 0
-    pos_mask = transformed_data >= 0
-    if lam != 0:
-        original_data[pos_mask] = (transformed_data[pos_mask] * lam + 1) ** (1 / lam) - 1
-    else:
-        original_data[pos_mask] = np.exp(transformed_data[pos_mask]) - 1
-    
-    # For y < 0
-    neg_mask = transformed_data < 0
-    if lam != 2:
-        original_data[neg_mask] = 1 - (-transformed_data[neg_mask] * (2 - lam) + 1) ** (1 / (2 - lam))
-    else:
-        original_data[neg_mask] = -np.exp(-transformed_data[neg_mask]) + 1
-    
-    return original_data
 
 
 class DataHandler:
@@ -974,9 +921,10 @@ class ModelManager:
         lower_bound = data_handler.data_postprocessing(lower_bound.reshape(-1, 1))
         upper_bound = data_handler.data_postprocessing(upper_bound.reshape(-1, 1))
         
-        rf_residuals = data_handler.y_raw_train - rf_fittedvalues    
-        rf_var = (rf_fittedvalues.var() + rf_residuals.var())
-        self.variances[model_name] = rf_var[0]
+          
+        residual_variance = ((upper_bound - lower_bound) / (2 * 1.96))**2
+        forecast_variance = residual_variance.ravel()
+        self.variances[model_name] = forecast_variance
         
         if plot:
             ind = data_handler.y_raw_test.index
@@ -1071,7 +1019,7 @@ class ModelManager:
         df['TheilsU_norm'] = (df['Theils U'] - df['Theils U'].min()) / (df['Theils U'].max() - df['Theils U'].min())
 
         # Define weights for the metrics
-        weights = {'MAPE': 0.5, 'R2': 0.3, 'Theils U': 0.2}
+        weights = {'MAPE': 2/3, 'R2': 1/6, 'Theils U': 1/6}
 
         # Calculate composite score
         df['Composite_Score'] = (
@@ -1168,6 +1116,7 @@ class ModelManager:
             y_raw_train = self.data_handler.y_raw_train
             MAEs = [mean_absolute_error(y_raw_train, model_fit) for model_fit in models_fit]
             MAEs = np.array(MAEs)
+            MAEs = 1 / MAEs # to make more error -> less weight
             total_MAE = MAEs.sum()
             model_weights = MAEs/total_MAE
             # print('model_weights', model_weights)
@@ -1197,6 +1146,23 @@ class ModelManager:
         self.__ensemble_ci(model_name)
         return stacked_forecast
     
+    def inverse_expected_variance(self, forecasts):
+            variances = np.array(self.variance_values)
+            inv_var = 1/variances
+            total_vars = inv_var.sum(axis=0)
+            weights = inv_var / total_vars
+            ensemble_forecast = np.array([np.dot(forecasts[:, n], weights[:, n]) 
+                                for n in range(forecasts.shape[1])
+                                ])
+            
+            model_name = 'inverse_variance'
+            
+            self.point_forecasts[model_name] = ensemble_forecast
+            self.ensemble_model_weights[model_name] = weights.mean(axis=1)
+            self.__ensemble_ci(model_name)
+            
+            return ensemble_forecast
+    
     def best_ensemble(self, model_names, plot=False, save_file=False):
         y_raw_test = self.data_handler.y_raw_test
         forecasts = np.array([self.point_forecasts[name] for name in model_names])
@@ -1209,12 +1175,13 @@ class ModelManager:
         forecasts = forecasts.reshape(forecasts.shape[:2])
         models_fit = models_fit.reshape(models_fit.shape[:2])
         
-        ensemble_names = ['blending', 'blending_weighted', 'stacking']
+        ensemble_names = ['blending', 'blending_weighted', 'stacking', 'inverse_variance']
         
         blended_forecast = self.blending(models_fit, forecasts)
         blended_forecast_w = self.blending(models_fit, forecasts, weighted=True)
         stacked_forecast = self.stacking(models_fit, forecasts)
-        ensemble_forecasts = [blended_forecast, blended_forecast_w, stacked_forecast]
+        inv_var_forecast = self.inverse_expected_variance(forecasts)
+        ensemble_forecasts = [blended_forecast, blended_forecast_w, stacked_forecast, inv_var_forecast]
         
         metrics = []
         for name, forecast in zip(ensemble_names, ensemble_forecasts):
@@ -1224,7 +1191,7 @@ class ModelManager:
         # Calculate composite score
         df = pd.DataFrame(metrics, dtype=float)
         df = self.comp_score_df(df)
-        df.to_excel(f'metrics_ensemble.xlsx')
+        df.to_excel('metrics_ensemble.xlsx')
         clm = ['MAPE', 'R2', 'Theils U', 'Composite_Score']
         latex_table = df[clm].round(4).sort_values(['Composite_Score']).to_latex(index=False)
         with open('metrics_ensemble.tex', 'w') as f:
@@ -1243,9 +1210,11 @@ class ModelManager:
             ind = y_raw_test.index
             plt.figure(figsize=(12, 6))
             plt.plot(ind, y_raw_test, label='Actual', color='black')
-            plt.plot(ind, blended_forecast_w, label='Weighted blending Forecast', color='blue')
-            plt.plot(ind, stacked_forecast, label='Stacking Forecast', color='red')
-            plt.legend(bbox_to_anchor=(0.5, -0.15), loc="lower center", ncol=3)
+            # plt.plot(ind, blended_forecast_w, label='Weighted blending forecast', color='blue')
+            plt.plot(ind, blended_forecast, label='Blending forecast', color='blue')
+            plt.plot(ind, stacked_forecast, label='Stacking forecast', color='darkgreen')
+            plt.plot(ind, inv_var_forecast, label='Inverse Variance forecast', color='red')
+            plt.legend(bbox_to_anchor=(0.5, -0.15), loc="lower center", ncol=4)
             if save_file: save_plot(plt, 'ensemble_comparison')
             plt.title("Ensemble Forecasts vs Actual Data")
             plt.show()
@@ -1362,3 +1331,67 @@ def save_plot(plt, title):
     file_path = os.path.join(plots_folder, f"{title}.png")
     plt.savefig(file_path, dpi=600, transparent=False, bbox_inches='tight')
         
+  
+# For multiprocessing to be able to pickle, define inverse power  
+# transforamtion functions outside of the DataHandler class
+def linear(x): return x
+def square(x): return x**2
+def product(x, transformation): return x * transformation
+def inverse_boxcox(lam, x): 
+    return inv_boxcox(x, lam)
+    # return (np.exp(np.log(lam * x + 1) / lam) - 1) if lam != 0 else np.exp(x) - 1
+
+def inverse_yeo_johnson(lam, transformed_data):
+    """
+    Perform the inverse Yeo-Johnson transformation on the given data.
+
+    Parameters:
+    - lam: float, the lambda parameter used in the original transformation
+    - transformed_data: array-like, transformed data to invert
+
+    Returns:
+    - original_data: array-like, data in the original scale
+    """
+    transformed_data = np.array(transformed_data)
+    original_data = np.zeros_like(transformed_data)
+    
+    # For y >= 0
+    pos_mask = transformed_data >= 0
+    if lam != 0:
+        original_data[pos_mask] = (transformed_data[pos_mask] * lam + 1) ** (1 / lam) - 1
+    else:
+        original_data[pos_mask] = np.exp(transformed_data[pos_mask]) - 1
+    
+    # For y < 0
+    neg_mask = transformed_data < 0
+    if lam != 2:
+        original_data[neg_mask] = 1 - (-transformed_data[neg_mask] * (2 - lam) + 1) ** (1 / (2 - lam))
+    else:
+        original_data[neg_mask] = -np.exp(-transformed_data[neg_mask]) + 1
+    
+    return original_data
+
+
+class IdentityScaler(BaseEstimator, TransformerMixin):
+    """A scaler that performs no transformation (identity transformation).
+    - Pipeline compatable: It integrates smoothly into scikit-learn pipelines.
+    - Useful for conditional scaling: Use it when you want to decide dynamically 
+    whether to scale the data or leave it untouched.
+    - Provides consistency: Makes the code cleaner and avoids handling special 
+    cases where no scaling is required.
+    """
+    def fit(self, X, y=None):
+        # Nothing to fit; return self
+        return self
+    
+    def transform(self, X):
+        # Return the data unchanged
+        return np.asarray(X)
+    
+    def inverse_transform(self, X):
+        # Return the data unchanged
+        return np.asarray(X)
+    
+    def fit_transform(self, X, y=None):
+        # Fit and transform in one step
+        return self.fit(X, y).transform(X)
