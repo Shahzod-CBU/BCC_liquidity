@@ -989,8 +989,7 @@ class ModelManager:
     
         return predictions
 
-    # def forecast_cycle_GRU(self, detrended_series, sarima_prefix, pretrain=False, plot=False):
-    def forecast_cycle_GRU(self, look_back, pretrain=False, plot=False):
+    def forecast_GRU(self, look_back, pretrain=False, plot=False):
         model_name = 'GRU'
         data_handler = self.data_handler
         train = self.data_handler.y_train
@@ -1003,10 +1002,10 @@ class ModelManager:
         if plot:
             ind = data_handler.y_raw_test.index[look_back:]
             plt.figure(figsize=(10, 6))
-            plt.plot(ind, data_handler.y_raw_test[look_back:], label="True Values", color="black")
-            plt.plot(ind, GRU_forecast, label="Mean Prediction", color="blue")
+            plt.plot(ind, data_handler.y_raw_test[look_back:], label="Actual")
+            plt.plot(ind, GRU_forecast, label="Mean Prediction")
             plt.legend(bbox_to_anchor=(0.5, -0.15), loc="lower center", ncol=3)
-            plt.title("Confidence Intervals for GRU")
+            plt.title("GRU")
             plt.show()
         
     def comp_score_df(self, df):
