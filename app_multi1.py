@@ -82,7 +82,7 @@ def transformation_train(data_handler):
 
         # Train GRU
         # look_back = 5
-        # manager.forecast_cycle_GRU(look_back, pretrain=True, plot=False)
+        # manager.forecast_GRU(look_back, pretrain=True, plot=False)
         # GRU_forecast = manager.point_forecasts['GRU']
         # performance = manager.evaluate_metrics(y_raw_test[look_back:], GRU_forecast)
         # manager.performance_metrics['GRU'] = performance
