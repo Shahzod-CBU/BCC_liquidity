@@ -2,7 +2,7 @@
 
 This repository provides a **comprehensive forecasting framework** that integrates **econometric models, machine learning techniques, and ensemble learning methods** to predict **banking system liquidity**. The framework is designed to be **scalable, robust, and efficient**, leveraging **multiprocessing** for high-performance execution.
 
-An **academic paper** describing the modeling process and insights is published on the [BCC Program's]([https://bccprogramme.org/wp-content/uploads/2025/02/Makhmudov-HEIDWP05-2025.pdf](https://bccprogramme.org/wp-content/uploads/2025/02/Makhmudov-HEIDWP05-2025-small-size.pdf)) (Switzerland) and RePEc database (Research Papers in Economics) websites:
+An **academic paper** describing the modeling process and insights is published on the [BCC Program's](https://bccprogramme.org/wp-content/uploads/2025/02/Makhmudov-HEIDWP05-2025.pdf) (Switzerland) and RePEc database (Research Papers in Economics) websites:
 https://ideas.repec.org/p/gii/giihei/heidwp05-2025.html
 
 ---
